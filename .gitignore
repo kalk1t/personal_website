@@ -1,0 +1,32 @@
+# === Build Artifacts ===
+/server/server
+/server/*.o
+/server/*.out
+/server/*.exe
+
+# === Log Files ===
+access.log
+
+# === OS Specific ===
+.DS_Store
+Thumbs.db
+
+# === Editor / IDE Files ===
+.vscode/
+*.code-workspace
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# === Backup / Temp Files ===
+*~
+*.swp
+*.bak
+*.tmp
+
+# === Git ===
+*.orig
+
+# === Makefile Output ===
+/server/Makefile.d
+

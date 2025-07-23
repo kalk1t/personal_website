@@ -17,14 +17,23 @@ The site is designed to be lightweight,fast and fully under my control - with no
 ## 📂 Project Structure
 
 personal_site/
+
 ├── server/ # C HTTP server
+
 │ ├── server.c
+
 │ └── Makefile
+
 ├── www/ # Frontend (served content)
+
 │ ├── index.html
+
 │ ├── style.css
+
 │ └── 404.html
+
 ├── access.log # Request log (auto-generated)
+
 └── README.md
 
 
