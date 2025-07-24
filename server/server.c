@@ -111,7 +111,10 @@ void serve_client(int client_sock){
 			"Content-Type: text/html\r\n"
 			"Content-Length: 60\r\n"
 			"Connection: Close\r\n\r\n"
-			"<html><body><h3>Note saved!</h3><a href=\"/submit.html\">Back</a></body></html>";
+			"<html><body>"
+			"<h3>Note saved!</h3>"
+			"<a href=\"/submit.html\">Back</a>"
+			"</body></html>";
 		ssize_t post=write(client_sock,response,strlen(response));
 		if(post<0){
 			perror("response");
@@ -126,7 +129,52 @@ void serve_client(int client_sock){
 	if(strcmp(path,"/")==0){
 		strcpy(path,"/index.html");
 	}
+// Clear all notes
+if (strcmp(method, "POST") == 0 && strcmp(path, "/clear") == 0) {
+    int deleted = remove("notes.txt"); // delete notes.txt
+    if (deleted == 0) {
+        const char* html =
+            "<html><head><title>Notes Cleared</title><link rel=\"stylesheet\" href=\"/style.css\"></head>"
+            "<body><h1> All notes cleared!</h1>"
+            "<a href=\"/\">Back to Home</a> | <a href=\"/notes\">View Notes</a>"
+            "</body></html>";
 
+        char header[BUF_SIZE];
+        snprintf(header, sizeof(header),
+            "HTTP/1.1 200 OK\r\n"
+            "Content-Type: text/html\r\n"
+            "Content-Length: %zu\r\n"
+            "Connection: close\r\n\r\n", strlen(html));
+
+       ssize_t clear= write(client_sock, header, strlen(header));
+       if(clear<0){
+	       perror("clear header");
+       }
+
+       ssize_t clear_notes=write(client_sock, html, strlen(html));
+       if(clear_notes<0)
+       {
+	       perror("html response while clearing notes");
+       }
+   	 } else {
+        perror("remove(notes.txt) failed");
+
+        const char* response =
+            "HTTP/1.1 500 Internal Server Error\r\n"
+            "Content-Type: text/plain\r\n"
+            "Content-Length: 30\r\n"
+            "Connection: close\r\n\r\n"
+            "Failed to delete notes.txt file.";
+        ssize_t html_response=write(client_sock, response, strlen(response));
+	if(html_response<0){
+		perror("html response while clearing notes");
+	}
+    }
+
+    close(client_sock);
+    return;
+}
+	
 	//read notes
 	if (strcmp(method, "GET") == 0 && strcmp(path, "/notes") == 0) {
  	   FILE* f = fopen("notes.txt", "r");
@@ -155,23 +203,32 @@ void serve_client(int client_sock){
 	note_content[notes_len] = '\0';
 	fclose(f);
 
-    	const char* header_start =
-        	"HTTP/1.1 200 OK\r\n"
-       	 	"Content-Type: text/html\r\n"
-        	"Connection: close\r\n\r\n";
     	const char* html_start = "<html><body><h1>Saved Notes</h1><pre>\n";
-    	const char* html_end = "</pre><br><a href=\"/\">Back to Home</a></body></html>";
+const char* html_end =	"</pre><br>"
+ 	   		"<form action=\"/clear\" method=\"POST\" onsubmit=\"return confirm('Delete ALL notes?');\" style=\"margin-top:20px;\">"
+ 	   		"<button type=\"submit\" class=\"danger-button\"> Clear All Notes</button>"
+			"</form>"
+	   		"<br><a href=\"/\">Back to Home</a></body></html>";
 
-    	int total_len = strlen(header_start) + strlen(html_start) + notes_len + strlen(html_end);
-    	char* response = malloc(total_len + 1);
-    	snprintf(response, total_len + 1, "%s%s%s%s", header_start, html_start, note_content, html_end);
-
-    	ssize_t notes_write=write(client_sock, response, strlen(response));
-    	if(notes_write<0){
+    	int html_len = strlen(html_start) + notes_len + strlen(html_end);
+    	char* html_body = malloc(html_len + 1);
+    	snprintf(html_body, html_len + 1, "%s%s%s", html_start, note_content, html_end);
+	char header[BUF_SIZE];
+	snprintf(header, sizeof(header),
+		"HTTP/1.1 200 OK\r\n"
+		"Content-Type: text/html\r\n"
+    		"Content-Length: %zu\r\n"
+    		"Connection: close\r\n\r\n", strlen(html_body));
+    	ssize_t header_write=write(client_sock, header, strlen(header));
+    	if(header_write<0){
 		perror("note content write");
 	}
+	ssize_t html_write=write(client_sock,html_body,strlen(html_body));
+	if(html_write<0){	
+		perror("html_body write");
+	}
 	free(note_content);
-    	free(response);
+    	free(html_body);
     	close(client_sock);
     	return;
 	}//notes
