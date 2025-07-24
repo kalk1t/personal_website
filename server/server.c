@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <ctype.h>
 #include <arpa/inet.h>
 #include <sys/stat.h>
 #include <fcntl.h>
@@ -13,7 +14,33 @@
 #define DEBUG 0
 #define BUF_SIZE 4096
 
+void url_decode(char* str){
+	char* src=str;
+	char* dst=str;
+	
+	while(*src){
+		if(*src=='+'){
+			*dst++=' ';
+			src++;
+		}
+		else if(*src=='%' && 
+			isxdigit((unsigned char)src[1]) &&
+		       	isxdigit((unsigned char)src[2])){
+		
+			char hex[3]={src[1],src[2],'\0'};
+			*dst++=(char)strtol(hex,NULL,16);
+			src+=3;
+		}else{
+			*dst++=*src++;
+		}
+	}
+	*dst='\0';
+}
+
 void serve_client(int client_sock){
+	time_t now=time(NULL);
+        struct tm* t=localtime(&now);
+	
 	char buffer[BUF_SIZE];
 	size_t bytes_read=read(client_sock,buffer,BUF_SIZE-1);
 	if(bytes_read<=0){
@@ -62,26 +89,20 @@ void serve_client(int client_sock){
 		char* note_field=strtok(NULL,"&");
 		if(name_field && strncmp(name_field,"name=",5)==0){
 			strncpy(name,name_field+5,sizeof(name)-1);
+			url_decode(name);
 		}
 		if(note_field && strncmp(note_field,"note=",5)==0){
 			strncpy(note,note_field+5,sizeof(note)-1);
+			url_decode(note);
 		}
-		//opetinal: replace '+' with space (URL-encoded)
-		for(int i=0;note[i];i++){
-			if(note[i]=='+') note[i]=' ';
-			
-		}
-		for(int i=0;name[i];i++){
-			if(name[i]=='+') name[i] =' ';
-		}
+
 
 		//step 5: Save to file
 		FILE* notes=fopen("notes.txt","a");
 		if(notes){
-			fprintf(notes,"From:%s\n \t-%s \n----\n",name,note);
+			fprintf(notes,"From:%s [%04d-%02d-%02d %02d:%02d:%02d] \n \t-%s \n----\n",name,t->tm_year+1900,t->tm_mon+1,t->tm_mday,t->tm_hour,t->tm_min,t->tm_sec,note);
 			fclose(notes);
 		}
-
 		//step 6: Return success response
 		const char* response=
 			"HTTP/1.1 200 OK\r\n"
@@ -197,8 +218,6 @@ void serve_client(int client_sock){
 	
 	FILE* log=fopen("access.log","a");
 	if(log){
-		time_t now=time(NULL);
-		struct tm* t=localtime(&now);
 		fprintf(log,"[%04d-%02d-%02d %02d:%02d:%02d] \"%s %s\"n",
 				t->tm_year+1900,t->tm_mon+1,t->tm_mday,
 				t->tm_hour,t->tm_min,t->tm_sec,method,path);
