@@ -54,6 +54,8 @@ void serve_client(int client_sock){
 	char method[8];
 	sscanf(buffer,"%s %s",method,path);
 	
+
+	//Submit a note
 	int is_post=strcmp(method,"POST")==0;
 	int is_submit_route=strcmp(path,"/submit")==0;
 	if(is_post && is_submit_route){
@@ -116,7 +118,7 @@ void serve_client(int client_sock){
 		}
 		close(client_sock);
 		return;
-	}
+	}//submit a note
 
 #if DEBUG
 	printf("Received request: methos=%s,path=%s\n",method,path);
@@ -124,7 +126,56 @@ void serve_client(int client_sock){
 	if(strcmp(path,"/")==0){
 		strcpy(path,"/index.html");
 	}
+
+	//read notes
+	if (strcmp(method, "GET") == 0 && strcmp(path, "/notes") == 0) {
+ 	   FILE* f = fopen("notes.txt", "r");
+ 	   if (!f) {
+        	const char* response = "HTTP/1.1 200 OK\r\n"
+                               "Content-Type: text/html\r\n"
+                               "Content-Length: 55\r\n"
+                               "Connection: close\r\n\r\n"
+                               "<html><body><p>No notes yet.</p><a href=\"/\">Back</a></body></html>";
+        	ssize_t notes_response=write(client_sock, response, strlen(response));
+        	if(notes_response<0){
+			perror("notes response");
+		}
+		close(client_sock);
+       	 	return;
+	   }
+	fseek(f, 0, SEEK_END);
+	long notes_len = ftell(f);
+	rewind(f);
 	
+	char* note_content = malloc(notes_len + 1);
+	ssize_t notes_read=fread(note_content, 1, notes_len, f);
+	if(notes_read<0){
+		perror("note content read");
+	}
+	note_content[notes_len] = '\0';
+	fclose(f);
+
+    	const char* header_start =
+        	"HTTP/1.1 200 OK\r\n"
+       	 	"Content-Type: text/html\r\n"
+        	"Connection: close\r\n\r\n";
+    	const char* html_start = "<html><body><h1>Saved Notes</h1><pre>\n";
+    	const char* html_end = "</pre><br><a href=\"/\">Back to Home</a></body></html>";
+
+    	int total_len = strlen(header_start) + strlen(html_start) + notes_len + strlen(html_end);
+    	char* response = malloc(total_len + 1);
+    	snprintf(response, total_len + 1, "%s%s%s%s", header_start, html_start, note_content, html_end);
+
+    	ssize_t notes_write=write(client_sock, response, strlen(response));
+    	if(notes_write<0){
+		perror("note content write");
+	}
+	free(note_content);
+    	free(response);
+    	close(client_sock);
+    	return;
+	}//notes
+
 	char full_path[512]="../www/index.html";
 	snprintf(full_path,sizeof(full_path),"../www%s",path);
 #if DEBUG
