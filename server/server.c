@@ -26,6 +26,77 @@ void serve_client(int client_sock){
 	char path[256];
 	char method[8];
 	sscanf(buffer,"%s %s",method,path);
+	
+	int is_post=strcmp(method,"POST")==0;
+	int is_submit_route=strcmp(path,"/submit")==0;
+	if(is_post && is_submit_route){
+		//step 1: Find content length
+		char* c1=strstr(buffer,"Content-Length:");
+		int content_length=0;
+		if(c1){
+			sscanf(c1,"Content_Length:%d",&content_length);
+		}
+
+		//step 2: Find start of POST body
+		char* body=strstr(buffer,"\r\n\r\n");
+		if(!body){
+			perror("Malformet POST request");
+			close(client_sock);
+			return;
+		}
+		body+=4; //skip the \r\n\r\n
+		
+		//step 3 : If body is not fully in buffer,read more(simpe version assumes small POST)
+		if((buffer+bytes_read)-body<content_length){
+			perror("POST body too short or incomplete");
+			close(client_sock);
+			return;
+		}
+
+		//step 4: Parse 'note=' from URL-encoded body
+		char name[128]={0};
+		char note[2048]={0};
+		
+
+		char* name_field=strtok(body,"&");
+		char* note_field=strtok(NULL,"&");
+		if(name_field && strncmp(name_field,"name=",5)==0){
+			strncpy(name,name_field+5,sizeof(name)-1);
+		}
+		if(note_field && strncmp(note_field,"note=",5)==0){
+			strncpy(note,note_field+5,sizeof(note)-1);
+		}
+		//opetinal: replace '+' with space (URL-encoded)
+		for(int i=0;note[i];i++){
+			if(note[i]=='+') note[i]=' ';
+			
+		}
+		for(int i=0;name[i];i++){
+			if(name[i]=='+') name[i] =' ';
+		}
+
+		//step 5: Save to file
+		FILE* notes=fopen("notes.txt","a");
+		if(notes){
+			fprintf(notes,"From:%s\n \t-%s \n----\n",name,note);
+			fclose(notes);
+		}
+
+		//step 6: Return success response
+		const char* response=
+			"HTTP/1.1 200 OK\r\n"
+			"Content-Type: text/html\r\n"
+			"Content-Length: 60\r\n"
+			"Connection: Close\r\n\r\n"
+			"<html><body><h3>Note saved!</h3><a href=\"/submit.html\">Back</a></body></html>";
+		ssize_t post=write(client_sock,response,strlen(response));
+		if(post<0){
+			perror("response");
+		}
+		close(client_sock);
+		return;
+	}
+
 #if DEBUG
 	printf("Received request: methos=%s,path=%s\n",method,path);
 #endif
