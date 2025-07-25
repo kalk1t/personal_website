@@ -50,6 +50,14 @@ char* html_escape(const char* src){
 return out;
 }
 
+
+void about_page(int client_sock,char method[],char path[]){
+	if(strcmp(method,"GET")==0 && strcmp(path,"/about")==0){
+
+	}
+	
+}
+
 void submit_note(int client_sock,char buffer[],char method[],char path[],size_t bytes_read,struct tm* t){
 //Submit a note
 	int is_post=strcmp(method,"POST")==0;
@@ -197,13 +205,17 @@ void read_notes(int client_sock,char method[],char path[]){
 	note_content[notes_len] = '\0';
 	fclose(f);
 
-    	const char* html_start = "<html><body><h1>Saved Notes</h1><pre>\n";
-const char* html_end =	"</pre><br>"
+    const char* html_start = "<html><head><meta charset=\"UTF-8\">"
+			"<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">"
+			"<link rel=\"stylesheet\" href=\"style.css\">"
+			"<title>Notes</title></head><body>"
+			"<h1>Saved Notes</h1><pre>\n";
+	const char* html_end =	"</pre><br>"
  	   		"<form action=\"/clear\" method=\"POST\" onsubmit=\"return confirm('Delete ALL notes?');\" style=\"margin-top:20px;\">"
  	   		"<button type=\"submit\" class=\"danger-button\"> Clear All Notes</button>"
 			"</form>"
 	   		"<br><a href=\"/\">Back to Home</a></body></html>";
-char* escaped_notes=html_escape(note_content);
+	char* escaped_notes=html_escape(note_content);
     	int html_len = strlen(html_start) +strlen(html_end)+strlen(escaped_notes);
     	char* html_body = malloc(html_len + 1);
     	snprintf(html_body, html_len + 1, "%s%s%s", html_start,escaped_notes, html_end);
@@ -229,6 +241,7 @@ char* escaped_notes=html_escape(note_content);
 	}//notes
 
 }
+
 
 void serve_client(int client_sock){
 	time_t now=time(NULL);
@@ -258,6 +271,7 @@ void serve_client(int client_sock){
 
 	clear_notes(client_sock,method,path);
 	read_notes(client_sock,method,path);
+	//about_page(client_sock,method,path);
 	
 	char full_path[512]="../www/index.html";
 	snprintf(full_path,sizeof(full_path),"../www%s",path);
