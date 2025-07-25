@@ -50,14 +50,6 @@ char* html_escape(const char* src){
 return out;
 }
 
-
-void about_page(int client_sock,char method[],char path[]){
-	if(strcmp(method,"GET")==0 && strcmp(path,"/about")==0){
-
-	}
-	
-}
-
 void submit_note(int client_sock,char buffer[],char method[],char path[],size_t bytes_read,struct tm* t){
 //Submit a note
 	int is_post=strcmp(method,"POST")==0;
@@ -111,16 +103,28 @@ void submit_note(int client_sock,char buffer[],char method[],char path[],size_t 
 		}
 		//step 6: Return success response
 		const char* response=
-			"HTTP/1.1 200 OK\r\n"
-			"Content-Type: text/html\r\n"
-			"Content-Length: 60\r\n"
-			"Connection: Close\r\n\r\n"
-			"<html><body>"
+			"<html>"
+			"<head>"
+			"<meta charset=\"UTF-8\">"
+			"<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">"
+			"<link rel=\"stylesheet\" href=\"style.css\">"
+			"</head>"
+			"<body>"
 			"<h3>Note saved!</h3>"
 			"<a href=\"/submit.html\">Back</a>"
 			"</body></html>";
-		ssize_t post=write(client_sock,response,strlen(response));
+char header[256];
+snprintf(header,sizeof(header),
+		"HTTP/1.1 200 OK\r\n"
+		"Content-Type: text/html\r\n"
+		"Content-Length: %zu\r\n"
+		"Connection: Close\r\n\r\n", strlen(response));
+		ssize_t post=write(client_sock,header,strlen(header));
 		if(post<0){
+			perror("success response");
+		}
+		ssize_t rsp=write(client_sock,response,strlen(response));
+		if(rsp<0){
 			perror("response");
 		}
 		close(client_sock);
@@ -181,11 +185,21 @@ void read_notes(int client_sock,char method[],char path[]){
 	if (strcmp(method, "GET") == 0 && strcmp(path, "/notes") == 0) {
  	   FILE* f = fopen("notes.txt", "r");
  	   if (!f) {
-        	const char* response = "HTTP/1.1 200 OK\r\n"
-                               "Content-Type: text/html\r\n"
-                               "Content-Length: 55\r\n"
-                               "Connection: close\r\n\r\n"
-                               "<html><body><p>No notes yet.</p><a href=\"/\">Back</a></body></html>";
+        	const char* response =  "HTTP/1.1 200 OK\r\n"
+									"Content-Type: text/html\r\n"
+									"Content-Length: 220\r\n"  // Adjust this to match total length!
+									"Connection: close\r\n\r\n"
+									"<html>"
+									"<head>"
+									"<meta charset=\"UTF-8\">"
+									"<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">"
+									"<link rel=\"stylesheet\" href=\"style.css\">"
+									"</head>"
+									"<body>"
+									"<p>No notes yet.</p>"
+									"<a href=\"/\">Back</a>"
+									"</body></html>";
+
         	ssize_t notes_response=write(client_sock, response, strlen(response));
         	if(notes_response<0){
 			perror("notes response");
@@ -271,7 +285,6 @@ void serve_client(int client_sock){
 
 	clear_notes(client_sock,method,path);
 	read_notes(client_sock,method,path);
-	//about_page(client_sock,method,path);
 	
 	char full_path[512]="../www/index.html";
 	snprintf(full_path,sizeof(full_path),"../www%s",path);
