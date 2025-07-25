@@ -185,11 +185,7 @@ void read_notes(int client_sock,char method[],char path[]){
 	if (strcmp(method, "GET") == 0 && strcmp(path, "/notes") == 0) {
  	   FILE* f = fopen("notes.txt", "r");
  	   if (!f) {
-        	const char* response =  "HTTP/1.1 200 OK\r\n"
-									"Content-Type: text/html\r\n"
-									"Content-Length: 220\r\n"  // Adjust this to match total length!
-									"Connection: close\r\n\r\n"
-									"<html>"
+			const char* response=	"<html>"
 									"<head>"
 									"<meta charset=\"UTF-8\">"
 									"<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">"
@@ -199,11 +195,22 @@ void read_notes(int client_sock,char method[],char path[]){
 									"<p>No notes yet.</p>"
 									"<a href=\"/\">Back</a>"
 									"</body></html>";
+			char header[256];
+        	snprintf(header,sizeof(header),
+									"HTTP/1.1 200 OK\r\n"
+									"Content-Type: text/html\r\n"
+									"Content-Length: %zu\r\n" 
+									"Connection: close\r\n\r\n",strlen(response));
+									
 
-        	ssize_t notes_response=write(client_sock, response, strlen(response));
-        	if(notes_response<0){
+        	ssize_t notes_header=write(client_sock, header, strlen(header));
+        	if(notes_header<0){
 			perror("notes response");
-		}
+			}
+			ssize_t notes_response=write(client_sock,response,strlen(response));
+			if(notes_response<0){
+				perror("notes_response");
+			}
 		close(client_sock);
        	 	return;
 	   }
