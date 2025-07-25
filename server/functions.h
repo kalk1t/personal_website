@@ -22,6 +22,34 @@ void url_decode(char* str){
 	*dst='\0';
 }
 
+char* html_escape(const char* src){
+	size_t len=0;
+	for(const char* p=src;*p;p++){
+		switch(*p){
+			case '&': len+=5;break; //&amp;
+			case '<':
+			case '>': len+=4;break; //&alt;&gt;
+			case '"': len+=6;break; //&quot;
+			default: len+=1;break;
+		}
+	}
+
+	char* out=malloc(len+1);
+	char* dst=out;
+	for(const char* p=src;*p;p++){
+		switch(*p){
+			case '&': memcpy(dst,"&amp;",5);dst+=5;break;
+			case '<': memcpy(dst,"&lt;",4);dst+=4;break;
+			case '>': memcpy(dst,"&gt;",4);dst+=4;break;
+			case '"': memcpy(dst,"&quot;",6);dst+=6;break;
+			default: *dst++=*p;break;
+		}
+	}
+
+*dst='\0';
+return out;
+}
+
 void submit_note(int client_sock,char buffer[],char method[],char path[],size_t bytes_read,struct tm* t){
 //Submit a note
 	int is_post=strcmp(method,"POST")==0;
@@ -175,10 +203,10 @@ const char* html_end =	"</pre><br>"
  	   		"<button type=\"submit\" class=\"danger-button\"> Clear All Notes</button>"
 			"</form>"
 	   		"<br><a href=\"/\">Back to Home</a></body></html>";
-
-    	int html_len = strlen(html_start) + notes_len + strlen(html_end);
+char* escaped_notes=html_escape(note_content);
+    	int html_len = strlen(html_start) +strlen(html_end)+strlen(escaped_notes);
     	char* html_body = malloc(html_len + 1);
-    	snprintf(html_body, html_len + 1, "%s%s%s", html_start, note_content, html_end);
+    	snprintf(html_body, html_len + 1, "%s%s%s", html_start,escaped_notes, html_end);
 	char header[BUF_SIZE];
 	snprintf(header, sizeof(header),
 		"HTTP/1.1 200 OK\r\n"
@@ -193,9 +221,10 @@ const char* html_end =	"</pre><br>"
 	if(html_write<0){	
 		perror("html_body write");
 	}
+	free(escaped_notes);
 	free(note_content);
-    	free(html_body);
-    	close(client_sock);
+    free(html_body);
+    close(client_sock);
     	return;
 	}//notes
 
