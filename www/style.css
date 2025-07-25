@@ -1,11 +1,43 @@
 body{
-	background-color: #f0f0f0;
-	font-family: dans-serif;
+	background-color: #43c138;
+	font-family: sans-serif;
 	padding: 2rem;
+    margin: 0;
 }
 
 h1{
 	color: #222;
+}
+
+
+textarea, button {
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+    font-size: 1rem;
+    margin-bottom: 1rem;
+}
+
+a {
+    display: inline-block;
+    margin-top: 1rem;
+    color: #2980b9;
+    text-decoration: none;
+    font-weight: bold;
+}
+a:hover {
+    text-decoration: underline;
+}
+
+pre {
+    background-color: #fff;
+    border: 1px solid #ccc;
+    padding: 1rem;
+    border-radius: 6px;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    font-family: monospace;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
 .danger-button {
@@ -25,3 +57,19 @@ h1{
 }
 
 
+.about-link {
+	position: fixed;
+	bottom: 20px;
+	right: 20px;
+	font-size: 16px;
+	text-decoration: none;
+	color: #333;
+	background-color: #e0e0e0;
+	padding: 8px 12px;
+	border-radius: 4px;
+	box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+.about-link:hover {
+	background-color: #d5d5d5;
+}
