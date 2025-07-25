@@ -22,25 +22,8 @@ void url_decode(char* str){
 	*dst='\0';
 }
 
-void serve_client(int client_sock){
-	time_t now=time(NULL);
-        struct tm* t=localtime(&now);
-	
-	char buffer[BUF_SIZE];
-	size_t bytes_read=read(client_sock,buffer,BUF_SIZE-1);
-	if(bytes_read<=0){
-		perror("read");
-		close(client_sock);
-		return;
-	}
-	buffer[bytes_read]='\0';
-	
-	char path[256];
-	char method[8];
-	sscanf(buffer,"%s %s",method,path);
-	
-
-	//Submit a note
+void submit_note(int client_sock,char buffer[],char method[],char path[],size_t bytes_read,struct tm* t){
+//Submit a note
 	int is_post=strcmp(method,"POST")==0;
 	int is_submit_route=strcmp(path,"/submit")==0;
 	if(is_post && is_submit_route){
@@ -107,59 +90,57 @@ void serve_client(int client_sock){
 		close(client_sock);
 		return;
 	}//submit a note
-
-#if DEBUG
-	printf("Received request: methos=%s,path=%s\n",method,path);
-#endif
-	if(strcmp(path,"/")==0){
-		strcpy(path,"/index.html");
-	}
-// Clear all notes
-if (strcmp(method, "POST") == 0 && strcmp(path, "/clear") == 0) {
-    int deleted = remove("notes.txt"); // delete notes.txt
-    if (deleted == 0) {
-        const char* html =
-            "<html><head><title>Notes Cleared</title><link rel=\"stylesheet\" href=\"/style.css\"></head>"
-            "<body><h1> All notes cleared!</h1>"
-            "<a href=\"/\">Back to Home</a> | <a href=\"/notes\">View Notes</a>"
-            "</body></html>";
-
-        char header[BUF_SIZE];
-        snprintf(header, sizeof(header),
-            "HTTP/1.1 200 OK\r\n"
-            "Content-Type: text/html\r\n"
-            "Content-Length: %zu\r\n"
-            "Connection: close\r\n\r\n", strlen(html));
-
-       ssize_t clear= write(client_sock, header, strlen(header));
-       if(clear<0){
-	       perror("clear header");
-       }
-
-       ssize_t clear_notes=write(client_sock, html, strlen(html));
-       if(clear_notes<0)
-       {
-	       perror("html response while clearing notes");
-       }
-   	 } else {
-        perror("remove(notes.txt) failed");
-
-        const char* response =
-            "HTTP/1.1 500 Internal Server Error\r\n"
-            "Content-Type: text/plain\r\n"
-            "Content-Length: 30\r\n"
-            "Connection: close\r\n\r\n"
-            "Failed to delete notes.txt file.";
-        ssize_t html_response=write(client_sock, response, strlen(response));
-	if(html_response<0){
-		perror("html response while clearing notes");
-	}
-    }
-
-    close(client_sock);
-    return;
 }
-	
+
+void clear_notes(int client_sock,char method[],char path[]){
+	// Clear all notes
+	if (strcmp(method, "POST") == 0 && strcmp(path, "/clear") == 0) {
+		int deleted = remove("notes.txt"); // delete notes.txt
+		if (deleted == 0) {
+			const char* html =
+				"<html><head><title>Notes Cleared</title><link rel=\"stylesheet\" href=\"/style.css\"></head>"
+				"<body><h1> All notes cleared!</h1>"
+				"<a href=\"/\">Back to Home</a> | <a href=\"/notes\">View Notes</a>"
+				"</body></html>";
+
+			char header[BUF_SIZE];
+			snprintf(header, sizeof(header),
+				"HTTP/1.1 200 OK\r\n"
+				"Content-Type: text/html\r\n"
+				"Content-Length: %zu\r\n"
+				"Connection: close\r\n\r\n", strlen(html));
+
+		ssize_t clear= write(client_sock, header, strlen(header));
+		if(clear<0){
+			perror("clear header");
+		}
+
+		ssize_t clear_notes=write(client_sock, html, strlen(html));
+		if(clear_notes<0)
+		{
+			perror("html response while clearing notes");
+		}
+		} else {
+			perror("remove(notes.txt) failed");
+
+			const char* response =
+				"HTTP/1.1 500 Internal Server Error\r\n"
+				"Content-Type: text/plain\r\n"
+				"Content-Length: 30\r\n"
+				"Connection: close\r\n\r\n"
+				"Failed to delete notes.txt file.";
+			ssize_t html_response=write(client_sock, response, strlen(response));
+		if(html_response<0){
+			perror("html response while clearing notes");
+		}
+		}
+
+		close(client_sock);
+		return;
+	}
+}
+
+void read_notes(int client_sock,char method[],char path[]){
 	//read notes
 	if (strcmp(method, "GET") == 0 && strcmp(path, "/notes") == 0) {
  	   FILE* f = fopen("notes.txt", "r");
@@ -218,6 +199,37 @@ const char* html_end =	"</pre><br>"
     	return;
 	}//notes
 
+}
+
+void serve_client(int client_sock){
+	time_t now=time(NULL);
+        struct tm* t=localtime(&now);
+	
+	char buffer[BUF_SIZE];
+	size_t bytes_read=read(client_sock,buffer,BUF_SIZE-1);
+	if(bytes_read<=0){
+		perror("read");
+		close(client_sock);
+		return;
+	}
+	buffer[bytes_read]='\0';
+	
+	char path[256];
+	char method[8];
+	sscanf(buffer,"%s %s",method,path);
+	
+	submit_note(client_sock,buffer,method,path,bytes_read,t);
+
+#if DEBUG
+	printf("Received request: method=%s,path=%s\n",method,path);
+#endif
+	if(strcmp(path,"/")==0){
+		strcpy(path,"/index.html");
+	}
+
+	clear_notes(client_sock,method,path);
+	read_notes(client_sock,method,path);
+	
 	char full_path[512]="../www/index.html";
 	snprintf(full_path,sizeof(full_path),"../www%s",path);
 #if DEBUG
