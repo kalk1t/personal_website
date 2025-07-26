@@ -86,24 +86,7 @@ void track_visitors(int client_sock,char path[]){
 		}
 
 		//step2: load index.html
-		FILE* f=fopen("../www/index.html","r");
-		if(!f){
-			perror("open index.html");
-			close(client_sock);
-			return;
-		}
-		fseek(f,0,SEEK_END);
-		long len=ftell(f);
-		rewind(f);
-
-		char* html=malloc(len+1);
-		ssize_t html_read=fread(html,1,len,f);
-		if(html_read <0){
-			perror("read html");
-			return;
-		}
-		html[len]='\0';
-		fclose(f);
+		char* html=load_template("../www/index.html");
 
 		//step 3 Replcae <!--VISITOR_COUNT--> with actual number
 		const char* placeholder="<!--VISITOR_COUNT-->";
@@ -133,13 +116,6 @@ void track_visitors(int client_sock,char path[]){
 				perror("write final html");
 				return;
 			}
-    } else {
-        // fallback if no placeholder found
-		printf("HTML read length: %ld\n", html_read);
-
-        send(client_sock, html, len, 0);
-		free(html);
-		close(client_sock);
     }
 
 
