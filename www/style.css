@@ -5,8 +5,35 @@ body{
     margin: 0;
 }
 
+
+
 h1{
 	color: #222;
+}
+
+#dark-mode-toggle{
+    position: fixed;
+    top:1rem;
+    right:1rem;
+    width:40px;
+    height:40px;
+    border:none;
+    border-radius:50%;
+    background-color:#444;
+    color:#fff;
+    font-size:20px;
+    cursor:pointer;
+    box-shadow: 0 2px 5 px rgba(0,0,0,0.3);
+    transition:background-color 0.3s;
+}
+
+#dark-mode-toggle:hover{
+    background-color: #222;
+}
+
+body.dark-mode{
+    background-color:#121212;
+    color: #f0f0f0;
 }
 
 

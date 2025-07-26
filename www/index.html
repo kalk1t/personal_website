@@ -17,7 +17,21 @@
 	</nav>
 
 	<a href="/about.html" class="about-link">About</a>
-	
+	<button id="dark-mode-toggle" onclick="toggleDarkMode()">🌓</button>
+
+	<script>
+	// Apply stored preference on load
+	if (localStorage.getItem('dark-mode') === 'true') {
+		document.body.classList.add('dark-mode');
+	}
+
+	function toggleDarkMode() {
+		const isDark=document.body.classList.toggle('dark-mode');
+		// Optionally store preference
+		localStorage.setItem('dark-mode', isDark);
+	}
+	</script>
+
 	</main>
 </body>
 </html>

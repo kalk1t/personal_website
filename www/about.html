@@ -11,5 +11,19 @@
     <p>This is my personal website built from scratch in pure C with a custom HTTP server.</p>
     <p>I use it to take notes, test ideas, and learn backend programming.</p>
     <a href="/">Back to Home</a>
+
+    
+	<script>
+	// Apply stored preference on load
+	if (localStorage.getItem('dark-mode') === 'true') {
+		document.body.classList.add('dark-mode');
+	}
+
+	function toggleDarkMode() {
+		const isDark=document.body.classList.toggle('dark-mode');
+		// Optionally store preference
+		localStorage.setItem('dark-mode', isDark);
+	}
+	</script>
 </body>
 </html>

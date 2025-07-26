@@ -103,15 +103,21 @@ void submit_note(int client_sock,char buffer[],char method[],char path[],size_t 
 		}
 		//step 6: Return success response
 		const char* response=
-			"<html>"
-			"<head>"
+			"<html><head>"
 			"<meta charset=\"UTF-8\">"
 			"<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">"
 			"<link rel=\"stylesheet\" href=\"style.css\">"
 			"</head>"
 			"<body>"
 			"<h3>Note saved!</h3>"
-			"<a href=\"/submit.html\">Back</a>"
+			"<a href=\"/\">Back to Home</a>"
+
+			"<script>"
+			"if (localStorage.getItem('dark-mode') === 'true') {"
+			"  document.body.classList.add('dark-mode');"
+			"}"
+			"</script>"
+
 			"</body></html>";
 char header[256];
 snprintf(header,sizeof(header),
@@ -141,6 +147,13 @@ void clear_notes(int client_sock,char method[],char path[]){
 				"<html><head><title>Notes Cleared</title><link rel=\"stylesheet\" href=\"/style.css\"></head>"
 				"<body><h1> All notes cleared!</h1>"
 				"<a href=\"/\">Back to Home</a> | <a href=\"/notes\">View Notes</a>"
+
+				"<script>"
+				"if (localStorage.getItem('dark-mode') === 'true') {"
+				"  document.body.classList.add('dark-mode');"
+				"}"
+				"</script>"
+
 				"</body></html>";
 
 			char header[BUF_SIZE];
@@ -194,6 +207,13 @@ void read_notes(int client_sock,char method[],char path[]){
 									"<body>"
 									"<p>No notes yet.</p>"
 									"<a href=\"/\">Back</a>"
+									
+									"<script>"
+									"if (localStorage.getItem('dark-mode') === 'true') {"
+									"  document.body.classList.add('dark-mode');"
+									"}"
+									"</script>"
+
 									"</body></html>";
 			char header[256];
         	snprintf(header,sizeof(header),
@@ -230,7 +250,14 @@ void read_notes(int client_sock,char method[],char path[]){
 			"<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">"
 			"<link rel=\"stylesheet\" href=\"style.css\">"
 			"<title>Notes</title></head><body>"
-			"<h1>Saved Notes</h1><pre>\n";
+			"<h1>Saved Notes</h1><pre>\n"
+			
+			"<script>"
+			"if (localStorage.getItem('dark-mode') === 'true') {"
+			"  document.body.classList.add('dark-mode');"
+			"}"
+			"</script>"
+;
 	const char* html_end =	"</pre><br>"
  	   		"<form action=\"/clear\" method=\"POST\" onsubmit=\"return confirm('Delete ALL notes?');\" style=\"margin-top:20px;\">"
  	   		"<button type=\"submit\" class=\"danger-button\"> Clear All Notes</button>"
