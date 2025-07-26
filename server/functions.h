@@ -50,6 +50,24 @@ char* html_escape(const char* src){
 return out;
 }
 
+char* load_template(const char* filepath){
+	FILE* f=fopen(filepath,"r");
+	if(!f) return NULL;
+	fseek(f,0,SEEK_END);
+	long f_size=ftell(f);
+	rewind(f);
+	char* content=malloc(f_size+1);
+	if(!content) return NULL;
+	ssize_t read_content=fread(content,1,f_size,f);
+	if(read_content<0){
+		perror("reading content");
+		return NULL;
+	}
+	content[f_size]='\0';
+	fclose(f);
+	return content;
+}
+
 void track_visitors(int client_sock,char path[]){
 		//step 1: read current count
 		FILE* visit_file=fopen("visits.txt","r+");
@@ -379,7 +397,7 @@ void serve_client(int client_sock){
 	if(bytes_read<=0){
 		perror("read");
 		close(client_sock);
-		return;
+		return ;
 	}
 	buffer[bytes_read]='\0';
 	
