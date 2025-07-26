@@ -50,6 +50,86 @@ char* html_escape(const char* src){
 return out;
 }
 
+void track_visitors(int client_sock,char path[]){
+		//step 1: read current count
+		FILE* visit_file=fopen("visits.txt","r+");
+		int count=0;
+		if(visit_file){
+			if(fscanf(visit_file,"%d",&count)!=1){
+				count=0;
+			}
+			rewind(visit_file);
+			count++;
+			fprintf(visit_file,"%d",count);
+			fclose(visit_file);
+		}
+		else{
+			perror("Could not open visits.txt");
+		}
+
+		//step2: load index.html
+		FILE* f=fopen("../www/index.html","r");
+		if(!f){
+			perror("open index.html");
+			close(client_sock);
+			return;
+		}
+		fseek(f,0,SEEK_END);
+		long len=ftell(f);
+		rewind(f);
+
+		char* html=malloc(len+1);
+		ssize_t html_read=fread(html,1,len,f);
+		if(html_read <0){
+			perror("read html");
+			return;
+		}
+		html[len]='\0';
+		fclose(f);
+
+		//step 3 Replcae <!--VISITOR_COUNT--> with actual number
+		const char* placeholder="<!--VISITOR_COUNT-->";
+		char* spot=strstr(html,placeholder);
+		if(spot){
+			char final_html[8912];
+			*spot='\0';
+			snprintf(final_html,sizeof(final_html),"%s%d%s",html,count,spot+strlen(placeholder));
+		
+
+		//step 4 : send response;
+		char header[256];
+		snprintf(header, sizeof(header),
+            "HTTP/1.1 200 OK\r\n"
+            "Content-Type: text/html\r\n"
+            "Content-Length: %zu\r\n"
+            "Connection: close\r\n\r\n",
+            strlen(final_html));
+
+			ssize_t write_header=write(client_sock, header, strlen(header));
+			if(write_header<0){
+				perror("write header");
+				return;
+			}
+       		ssize_t write_final_html=write(client_sock, final_html, strlen(final_html));
+			if(write_final_html<0){
+				perror("write final html");
+				return;
+			}
+    } else {
+        // fallback if no placeholder found
+		printf("HTML read length: %ld\n", html_read);
+
+        send(client_sock, html, len, 0);
+		free(html);
+		close(client_sock);
+    }
+
+
+	free(html);
+	close(client_sock);
+	
+}
+
 void submit_note(int client_sock,char buffer[],char method[],char path[],size_t bytes_read,struct tm* t){
 //Submit a note
 	int is_post=strcmp(method,"POST")==0;
@@ -290,7 +370,6 @@ void read_notes(int client_sock,char method[],char path[]){
 
 }
 
-
 void serve_client(int client_sock){
 	time_t now=time(NULL);
         struct tm* t=localtime(&now);
@@ -307,8 +386,10 @@ void serve_client(int client_sock){
 	char path[256];
 	char method[8];
 	sscanf(buffer,"%s %s",method,path);
-	
-	submit_note(client_sock,buffer,method,path,bytes_read,t);
+	if (strcmp(path, "/") == 0 || strcmp(path, "/index") == 0) {
+		track_visitors(client_sock, path);
+		return;
+	}
 
 #if DEBUG
 	printf("Received request: method=%s,path=%s\n",method,path);
@@ -316,7 +397,8 @@ void serve_client(int client_sock){
 	if(strcmp(path,"/")==0){
 		strcpy(path,"/index.html");
 	}
-
+	
+	submit_note(client_sock,buffer,method,path,bytes_read,t);
 	clear_notes(client_sock,method,path);
 	read_notes(client_sock,method,path);
 	
@@ -371,7 +453,7 @@ void serve_client(int client_sock){
 		close(client_sock);
 		return;
 	}
-	
+
 	char* content=malloc(len+1);
 	memset(content,0,len+1);
 	size_t loaded=fread(content,1,len,file);
