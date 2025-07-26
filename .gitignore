@@ -5,7 +5,7 @@
 /server/*.exe
 
 # === Log Files ===
-access.log
+/server/access.log
 
 # === OS Specific ===
 .DS_Store
@@ -29,4 +29,3 @@ Thumbs.db
 
 # === Makefile Output ===
 /server/Makefile.d
-/server/access.log
