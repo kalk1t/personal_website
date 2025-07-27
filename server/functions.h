@@ -267,6 +267,97 @@ void clear_notes(int client_sock,char method[],char path[]){
 	}
 }
 
+void read_CV(int client_sock,char method[],char path[]){
+	if(strcmp(method,"GET")==0 && strcmp(path,"/CV")==0){
+		FILE* f=fopen("../assets/CV.pdf","rb");
+		if (!f) {
+			const char* response=	"<html>"
+									"<head>"
+									"<meta charset=\"UTF-8\">"
+									"<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">"
+									"<link rel=\"stylesheet\" href=\"style.css\">"
+									"</head>"
+									"<body>"
+									"<p>No CV yet.</p>"
+									"<a href=\"/\">Back</a>"
+									
+									"<script>"
+									"if (localStorage.getItem('dark-mode') === 'true') {"
+									"  document.body.classList.add('dark-mode');"
+									"}"
+									"</script>"
+
+									"</body></html>";
+			char header[256];
+        	snprintf(header,sizeof(header),
+									"HTTP/1.1 200 OK\r\n"
+									"Content-Type: text/html\r\n"
+									"Content-Length: %zu\r\n" 
+									"Connection: close\r\n\r\n",strlen(response));
+									
+
+        	ssize_t _header=write(client_sock, header, strlen(header));
+        	if(_header<0){
+			perror("notes response");
+			}
+			ssize_t _response=write(client_sock,response,strlen(response));
+			if(_response<0){
+				perror("notes_response");
+			}
+		close(client_sock);
+       	 	return;
+	   }
+
+	   fseek(f,0,SEEK_END);
+	   long cv_len=ftell(f);
+	   rewind(f);
+	   char* cv=malloc(cv_len+1);
+	   ssize_t read_cv=fread(cv,1,cv_len,f);
+	   if(read_cv<0){
+			perror("reading cv");
+			return;
+	   }
+	   cv[cv_len]='\0';
+	   fclose(f);
+
+	   const char* html_start = "<html><head><meta charset=\"UTF-8\">"
+			"<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">"
+			"<link rel=\"stylesheet\" href=\"style.css\">"
+			"<title>CV</title></head><body>"
+			
+			"<script>"
+			"if (localStorage.getItem('dark-mode') === 'true') {"
+			"  document.body.classList.add('dark-mode');"
+			"}"
+			"</script>"
+;
+	const char* html_end ="<br><a href=\"/\">Back to Home</a></body></html>";
+	char* escaped_notes=html_escape(cv);
+    	int html_len = strlen(html_start) +strlen(html_end)+strlen(escaped_notes);
+    	char* html_body = malloc(html_len + 1);
+    	snprintf(html_body, html_len + 1, "%s%s%s", html_start,escaped_notes, html_end);
+	char header[BUF_SIZE];
+	snprintf(header, sizeof(header),
+		"HTTP/1.1 200 OK\r\n"
+		"Content-Type: text/html\r\n"
+    		"Content-Length: %zu\r\n"
+    		"Connection: close\r\n\r\n", strlen(html_body));
+    	ssize_t header_write=write(client_sock, header, strlen(header));
+    	if(header_write<0){
+		perror("note content write");
+	}
+	ssize_t html_write=write(client_sock,html_body,strlen(html_body));
+	if(html_write<0){	
+		perror("html_body write");
+	}
+	free(escaped_notes);
+	free(cv);
+    free(html_body);
+    close(client_sock);
+    	return;
+	}
+}
+
 void read_notes(int client_sock,char method[],char path[]){
 	//read notes
 	if (strcmp(method, "GET") == 0 && strcmp(path, "/notes") == 0) {
@@ -391,13 +482,15 @@ void serve_client(int client_sock){
 	if(strcmp(path,"/")==0){
 		strcpy(path,"/index.html");
 	}
-	
 	submit_note(client_sock,buffer,method,path,bytes_read,t);
 	clear_notes(client_sock,method,path);
 	read_notes(client_sock,method,path);
 	
 	char full_path[512]="../www/index.html";
 	snprintf(full_path,sizeof(full_path),"../www%s",path);
+
+
+
 #if DEBUG
 	printf("Full path: %s\n",full_path);
 #endif
@@ -466,6 +559,7 @@ void serve_client(int client_sock){
 #endif
 	const char* content_type="text/html";
 	if(strstr(path,".css")) content_type="text/css";
+	else if(strstr(path,".pdf")) content_type="application/pdf";
 
 	char header[BUF_SIZE];
 	snprintf(header,sizeof(header),
