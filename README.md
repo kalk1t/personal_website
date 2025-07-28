@@ -8,8 +8,11 @@ The site is designed to be lightweight,fast and fully under my control - with no
 ##  Features
 
  Custom HTTP server written in C (no external libraries)
+
  Serves static HTML and CSS files
+
  Main page where are all my information placed
+
  Projects' page where all my projects will be placed
 
 
