@@ -27,7 +27,8 @@ int main(){
 		.sin_addr.s_addr=INADDR_ANY,
 		.sin_port=htons(PORT)
 	};
-
+	int opt=1;
+	setsockopt(server_sock,SOL_SOCKET,SO_REUSEADDR,&opt,sizeof(opt));
 	if(bind(server_sock,(struct sockaddr*)&addr,sizeof(addr))<0){
 		perror("bind");
 		exit(1);
