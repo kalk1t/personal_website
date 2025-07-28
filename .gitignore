@@ -6,7 +6,6 @@
 
 # === Log Files ===
 /server/access.log
-/server/visits.txt
 
 # === OS Specific ===
 .DS_Store
