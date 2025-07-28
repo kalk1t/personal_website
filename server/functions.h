@@ -50,6 +50,16 @@ char* html_escape(const char* src){
 return out;
 }
 
+void log_error(const char* format, ...) {
+    FILE* errlog = fopen("server//logs/error.log", "a");
+    if (!errlog) return;
+    va_list args;
+    va_start(args, format);
+    vfprintf(errlog, format, args);
+    va_end(args);
+    fclose(errlog);
+}
+
 void serve_client(int client_sock){
 	time_t now=time(NULL);
         struct tm* t=localtime(&now);
@@ -62,11 +72,40 @@ void serve_client(int client_sock){
 		return ;
 	}
 	buffer[bytes_read]='\0';
+	buffer[strcspn(buffer,"\r\n")]='\0';
 	
 	char path[256];
 	char method[8];
 	sscanf(buffer,"%s %s",method,path);
 
+if (strstr(path, "..") || strchr(path, '\\')) {
+    const char* msg = "HTTP/1.1 400 Bad Request\r\nContent-Length: 0\r\n\r\n";
+    ssize_t wr=write(client_sock, msg, strlen(msg));
+	if(wr<0){
+		perror("400 - write()");
+		return;
+	}
+    log_error("[%ld] Invalid path attack attempt: %s\n", time(NULL), path);
+
+    close(client_sock);
+    return;
+}
+
+
+
+//serve only GET method for now
+if(strstr(method,"GET")==0){
+		const char* msg="HTTP/1.1 405 Method Not Allowed\r\nContent-Length: 0\r\n\r\n";
+		ssize_t wr=write(client_sock,msg,strlen(msg));
+		if(wr<0){
+			perror("405 - write()");
+			return;
+		}
+			log_error("[%ld] Reject method: %s\n",time(NULL),method);
+
+		close(client_sock);
+		return;
+}
 #if DEBUG
 	printf("Received request: method=%s,path=%s\n",method,path);
 #endif
