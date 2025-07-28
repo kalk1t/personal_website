@@ -5,7 +5,8 @@
 /server/*.exe
 
 # === Log Files ===
-/server/access.log
+/server/logs/access.log
+/server/logs/error.log
 
 # === OS Specific ===
 .DS_Store
@@ -28,4 +29,5 @@ Thumbs.db
 *.orig
 
 # === Makefile Output ===
+build/
 /server/Makefile.d

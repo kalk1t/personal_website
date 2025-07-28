@@ -169,9 +169,9 @@ void serve_client(int client_sock){
 #endif
 	if(body_bytes<0) perror("write body");
 	
-	FILE* log=fopen("access.log","a");
+	FILE* log=fopen("logs/access.log","a");
 	if(log){
-		fprintf(log,"[%04d-%02d-%02d %02d:%02d:%02d] \"%s %s\"n",
+		fprintf(log,"[%04d-%02d-%02d %02d:%02d:%02d] \"%s %s\"\n",
 				t->tm_year+1900,t->tm_mon+1,t->tm_mday,
 				t->tm_hour,t->tm_min,t->tm_sec,method,path);
 		fclose(log);
