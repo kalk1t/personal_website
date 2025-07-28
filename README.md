@@ -5,12 +5,15 @@ This is a minimalist personal website build from scratch using PURE C for the ba
 The site is designed to be lightweight,fast and fully under my control - with no dependencies.
 
 
-## 🧩 Features
+##  Features
 
-- 🌐 Custom HTTP server written in C (no external libraries)
-- 📄 Serves static HTML and CSS files
+ Custom HTTP server written in C (no external libraries)
+ Serves static HTML and CSS files
+ Main page where are all my information placed
+ Projects' page where all my projects will be placed
 
-## 📂 Project Structure
+
+## Project Structure
 
 personal_site/
 
@@ -20,10 +23,7 @@ personal_site/
 
 └── README.md
 
+###  Build the server
 
-## 🚀 Getting Started
-
-### 🛠️ Build the server
-```bash
 cd server
 make
